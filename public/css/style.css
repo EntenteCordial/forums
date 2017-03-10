@@ -119,6 +119,33 @@ ul{
 	color: #333;
 }
 
+/* POST REPLIES */
+.replies{
+	margin-left:20px;
+}
+
+/* POST REPLY AREA */
+.replyArea{
+	position:relative;
+	border:1px solid black;
+	height: 52px;
+	width:calc(100% - 20px);
+}
+
+.replyArea textarea{
+	width:calc(100% - 50px);
+	position:absolute;
+	top:0;
+	min-height:50px;
+}
+
+.replyArea button{
+	position:absolute;
+	top:0; right:0;
+	height:100%;
+	width:50px;
+}
+
 /* POST AREA */
 #postAreaContainer{
 	position:absolute;
@@ -131,9 +158,11 @@ ul{
 #postArea{
 	position:absolute;
 	width:calc(100% - 100px);
-	height:100%;
+}
+textarea{
 	padding:10px;
 	border:0 none;
+	height:100%;
 }
 
 #postAreaBtn{
@@ -141,5 +170,8 @@ ul{
 	right:0;
 	width:100px;
 	height:98px;
+}
+
+button{
 	border:0 none;
 }

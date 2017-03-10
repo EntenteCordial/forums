@@ -3,10 +3,9 @@ const localtunnel = require('localtunnel');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 
-const Channel = require('./models/Channel');
-
 const apiRouter = require('./routers/ApiRouter.js');
 const login = require('./login');
+const db = require('./database');
 
 const app = express();
 
@@ -19,8 +18,8 @@ app.use(express.static(__dirname + '/public'));
 // serve rest api
 app.use('/api', apiRouter);
 
-Channel.collection.load().then(()=>{
-	console.log(`All channels loaded`);
+db.load().then(()=>{
+	console.log(`Databases loaded`);
 	
 	app.listen(login.port, ()=>{
 		console.log(`Express connected to port ${login.port}`);

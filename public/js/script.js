@@ -95,12 +95,17 @@ var Post = Backbone.Model.extend({
 		id: '',
 		text: '',
 		author: '',
-		date: ''
+		date: '',
+		replies: []
 	},
 	url: '/api/posts',
 	
 	initialize: function(){
 		this.date = new Date(this.get('date'));
+		this.replies = new PostCollection(this.get('replies'));
+	},
+	
+	parse: function(response){
 	}
 });
 
@@ -111,11 +116,6 @@ var PostCollection = Backbone.Collection.extend({
 	model: Post,
 	
 	initialize: function(){
-	},
-	
-	parse: function(response){
-		console.log(response)
-		return new Post(response);
 	}
 });
 
@@ -124,6 +124,7 @@ var PostCollection = Backbone.Collection.extend({
 // -----------------------------------
 var PostView = Backbone.View.extend({
 	tagName: 'div',
+	className: 'post',
 	
 	events: {
 		'click .author': 'noop',
@@ -131,29 +132,36 @@ var PostView = Backbone.View.extend({
 		'click .hide': 'noop',
 		'click .flag': 'noop',
 		'click .edit': 'noop',
-		'click .reply': 'reply',
+		'click .reply': 'onClickReply',
 	},
 	
 	initialize: function(){
+		this.isReplyShow = false;
+		this.replies = new PostsView({ collection: this.model.replies });
 		this.listenTo(this.model, 'change', this.update);
 	},
 	
 	render: function(){
 		this.$el.html(
-		"<div class='post'>" +
-			"<p class='text'>" + this.model.get('text') + "</p>" +
-			"<ul class='buttons'>" +
-				"<li class='author'><a href='#'>" + this.model.get('author') + "</a></li>" +
-				"<li class='time'><time datetime='" + this.model.get('date') + "'>" + formatDate(this.model.date) + "</a></li>" +
-				"<li class='permalink'><a href='" + '#' + "'>permalink</a></li>" +
-				"<li class='edit'><a href='#'>edit</a></li>" +
-				"<li class='delete'><a href='#'>delete</a></li>" +
-				"<li class='hide'><a href='#'>hide</a></li>" +
-				"<li class='flag'><a href='#'>flag</a></li>" +
-				"<li class='reply'><a href='#'>reply</a></li>" +
-			"</ul>" +
-		"</div>"
+		"<p class='text'>" + this.model.get('text') + "</p>" +
+		"<ul class='buttons'>" +
+			"<li class='author'><a href='#'>" + this.model.get('author') + "</a></li>" +
+			"<li class='time'><time datetime='" + this.model.get('date') + "'>" + formatDate(this.model.date) + "</a></li>" +
+			"<li class='permalink'><a href='" + '#' + "'>permalink</a></li>" +
+			"<li class='edit'><a href='#'>edit</a></li>" +
+			"<li class='delete'><a href='#'>delete</a></li>" +
+			"<li class='hide'><a href='#'>hide</a></li>" +
+			"<li class='flag'><a href='#'>flag</a></li>" +
+			"<li class='reply'><a href='#'>reply</a></li>" +
+		"</ul>" +
+		"<div class='replyArea' style='display:none'>" +
+			"<textarea></textarea>" +
+			"<button>Submit</button>" +
+		"</div>" +
+		"<div class='replies'></div>"
 		);
+		this.replies.setElement(this.$('.replies'));
+		this.replies.render();
 		return this;
 	},
 	
@@ -164,8 +172,9 @@ var PostView = Backbone.View.extend({
 	
 	noop: function(){},
 	
-	reply: function(){
-		App.view.addBeforeText('p/'+this.model.get('id'));
+	onClickReply: function(e){
+		e.stopPropagation();
+		this.$el.children('.replyArea').slideToggle();
 	}
 });
 
@@ -173,15 +182,13 @@ var PostView = Backbone.View.extend({
 // POSTS VIEW
 // -----------------------------------
 var PostsView = Backbone.View.extend({
-	el: '#posts',
+	tagName: 'div',
 	
 	initialize: function(){
 	},
 	
 	// events
 	addEvents: function(){
-		console.log('ADDED', this.collection)
-		//this.collection.on('remove', console.log, this);
 		this.collection.on('add', this.add, this);
 	},
 	
@@ -199,7 +206,6 @@ var PostsView = Backbone.View.extend({
 	},
 	
 	add: function(post){
-		console.log('ADDED', post);
 		this.$el.append(new PostView({ model: post }).render().el);
 		this.$el.scrollTop(this.$el.prop('scrollHeight'));
 	}
@@ -217,11 +223,14 @@ var Channel = Backbone.Model.extend({
 	urlRoot: '/api/channels',
 	
 	initialize: function(){
+		//console.log('IN')
 		this.posts = new PostCollection();
 	},
 	
 	parse: function(response, options){
+		this.set('name', response.name);
 		this.set('posts', response.posts);
+		//console.log(this.posts)
 		this.posts.set(response.posts);
 	}
 });
@@ -236,10 +245,9 @@ var ChannelCollection = Backbone.Collection.extend({
 	initialize: function(){
 	},
 	
-	parse: function(response){
-		var self = this;
-		return _.map(Object.values(response), function(value){
-			return new Channel({ name: value });
+	parse: function(response, options){
+		return _.map(response, function(channel){
+			return new Channel(channel);
 		});
 	}
 });
@@ -254,10 +262,11 @@ var ChannelView = Backbone.View.extend({
 		var self = this;
 		
 		this.model = null;
-		this.postsView = new PostsView();
+		this.postsView = new PostsView({ el: '#posts' });
 		
 		this.collection.fetch({
 			success: function(){
+				//console.log(self.collection)
 				self.collection.get(App.currentChannel).fetch({
 					success: function(model){
 						self.postsView.collection = model.posts;
@@ -514,7 +523,7 @@ var App = _.extend({
 	
 	// update collections
 	update: function(){
-		console.log('UPDATE')
+		//console.log('UPDATE')
 		App.channels.get(App.currentChannel).fetch();
 		setTimeout(App.update, 500);
 	}

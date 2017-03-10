@@ -1,15 +1,13 @@
 const express = require('express');
-const User = require('../models/User');
-const Post = require('../models/Post');
-const Channel = require('../models/Channel');
+const User = require('../databases/User');
+const Post = require('../databases/Post');
+const Channel = require('../databases/Channel');
 
 const router = express.Router();
 
 // user
 router.get(/^\/users\/(\w+)$/, (req, res, next)=>{
-	User.collection.get(req.params[0]).then(user=>{
-		res.json(user.toSendableJSON());
-	}).catch(error=>res.send(error));
+	User.get(req.params[0]).then(user=>res.json(user)).catch(error=>res.send(error));
 });
 
 router.get('/users/',(req, res, next)=>{
@@ -23,35 +21,33 @@ router.put('/posts/',(req, res, next)=>{
 	console.log('PUT POST',req.body)
 	if(!req.body.text) return res.send('Text not specified');
 	if(!req.body.author) return res.send('Author not specified');
-	if(!req.body.channel) return res.send('Channel not specified');
-	Post.collection.add({
+	if(!req.body.channel || !req.body.post) return res.send('Channel or post not specified');
+	Post.add({
 		text: req.body.text,
 		author: req.body.author,
-		channel: req.body.channel
-	}).then(()=>{
-		console.log('TRUE');
-		res.json(true);
-	}).catch(error=>{
-		console.log('FALSE');
-		res.send(error)
-	});
+		channel: req.body.channel,
+		post: req.body.post
+	}).then(()=>res.json(true)).catch(error=>res.send(error));
 });
 
 // channels
 router.get(/^\/channels\/(\w+)$/, (req, res, next)=>{
-	const channel = Channel.collection.get(req.params[0]);
-	channel.loadPosts().then(()=>{
-		//console.log(channel.toJSON());
-		res.json(channel.toSendableJSON());
-	}).catch(error=>res.send(error));
+	Channel.get(req.params[0]).then(channel=>{
+		Post.listify(channel.posts).then(replies=>{
+			channel.posts = replies;
+			res.json(channel);
+		}).catch(error=>console.log(error));
+	}).catch(error=>{
+		console.log(error)
+		res.send(error)
+	});
 });
 
 router.get('/channels/', (req, res, next)=>{
-	console.log(Channel.collection.channels);
-	res.json(Object.keys(Channel.collection.channels));
+	Channel.list().then(list=>res.json(list.map(channel=>({ name: channel.name })))).catch(error=>res.send(error));
 });
 
-router.post('/channels/',(req, res, next)=>{
+router.put('/channels/',(req, res, next)=>{
 });
 
 // login / signup

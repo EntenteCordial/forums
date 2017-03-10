@@ -5,19 +5,21 @@ const db = {
 	channels: new nedb({ filename: './channels.db' }),
 };
 
+const promises = [];
+
 for(let i in db){
-	db[i].loadDatabase(error=>{
-		if(error){
-			console.error(error);
-			process.exit();
-		} else {
-			console.log('Connected to nedb database:', i);
-		}
-	});
+	((i)=>{
+		promises.push(new Promise((resolve, reject)=>{
+			db[i].loadDatabase(error=>{
+				if(error) reject(error);
+				else resolve();
+			});
+		}));
+	})(i);
 }
 
-// validation
-db.users.ensureIndex({ fieldName: 'username', unique: true }, console.error);
-db.channels.ensureIndex({ fieldName: 'name', unique: true }, console.error);
-
 module.exports = db;
+
+module.exports.load = ()=>{
+	return Promise.all(promises);
+};
