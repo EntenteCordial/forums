@@ -18,16 +18,26 @@ router.get(/^\/posts\/(\w+)$/, (req, res, next)=>{
 });
 
 router.put('/posts/',(req, res, next)=>{
-	console.log('PUT POST',req.body)
+	//console.log(!req.body.channel, !req.body.post)
 	if(!req.body.text) return res.send('Text not specified');
 	if(!req.body.author) return res.send('Author not specified');
-	if(!req.body.channel || !req.body.post) return res.send('Channel or post not specified');
+	if(!req.body.channel) {
+		if(!req.body.post){
+			return res.send('Reply not specified');
+		}
+		return res.send('Channel not specified');
+	}
+	
 	Post.add({
 		text: req.body.text,
 		author: req.body.author,
 		channel: req.body.channel,
 		post: req.body.post
-	}).then(()=>res.json(true)).catch(error=>res.send(error));
+	}).then(()=>{
+		res.json(true)
+	}).catch(error=>{
+		res.send(error)
+	});
 });
 
 // channels
@@ -36,9 +46,10 @@ router.get(/^\/channels\/(\w+)$/, (req, res, next)=>{
 		Post.listify(channel.posts).then(replies=>{
 			channel.posts = replies;
 			res.json(channel);
-		}).catch(error=>console.log(error));
+		}).catch(error=>{
+			res.send(error)
+		});
 	}).catch(error=>{
-		console.log(error)
 		res.send(error)
 	});
 });
@@ -61,15 +72,13 @@ router.post('/signup/', (req, res, next)=>{
 });
 
 router.post('/login/', (req, res, next)=>{
-	User.collection.get(req.body.username).then(user=>{
-		user.comparePassword(req.body.password).then(value=>{
-			if(value) {
-				req.session.user = req.body.username;
-				res.json(true);
-			} else {
-				res.send('Password is incorrect.');
-			}
-		}).catch(error=>res.send(error));
+	User.comparePassword(req.body.username, req.body.password).then(value=>{
+		if(value) {
+			req.session.user = req.body.username;
+			res.json(true);
+		} else {
+			res.send('Password is incorrect.');
+		}
 	}).catch(error=>res.send(error));
 });
 

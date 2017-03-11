@@ -10,7 +10,11 @@ const db = require('./database');
 const app = express();
 
 // serve static files
-app.use(session({ secret: 'secret' }));
+app.use(session({
+	secret: login.secret,
+    resave: true,
+    saveUninitialized: true
+}));
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 app.use(express.static(__dirname + '/public'));
@@ -23,12 +27,14 @@ db.load().then(()=>{
 	
 	app.listen(login.port, ()=>{
 		console.log(`Express connected to port ${login.port}`);
-		/*
+		
 		// localtunnel tunnelling
-		localtunnel(login.port, { subdomain: login.subdomain }, (err,tunnel)=>{
-			if(err) { console.log(err); process.exit(); }
-			else console.log(`localtunnel connected to url ${tunnel.url}`);
-		});*/
+		if(login.tunnel){
+			localtunnel(login.port, { subdomain: login.subdomain }, (err,tunnel)=>{
+				if(err) { console.log(err); process.exit(); }
+				else console.log(`localtunnel connected to url ${tunnel.url}`);
+			});
+		}
 	});
 
 }).catch(console.error);

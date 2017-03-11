@@ -6,12 +6,12 @@ class Post {
 		this.db = db.posts;
 	}
 	
-	jsonify({ text, author, replies }){
+	jsonify({ text, author }){
 		return {
 			id: shortid.generate(),
 			text, author,
 			date: new Date(),
-			replies
+			replies: []
 		};
 	}
 	
@@ -21,18 +21,14 @@ class Post {
 				this.db.find({ id: { $in: list } }).sort({ date:1 }).exec((error, posts)=>{
 					if(posts.length){
 						const promises = [];
-						for(let post of posts){
-							if(post.replies.length){
-								((post)=>{
-									promises.push(new Promise((resolve,reject)=>{
-										A(post.replies).then(replies=>{
-											post.replies = replies;
-											resolve();
-										}).catch(reject);
-									}));
-								})(post);
-							}
-						}
+						posts.forEach(post=>{
+							promises.push(new Promise((resolve,reject)=>{
+								A(post.replies).then(replies=>{
+									post.replies = replies;
+									resolve();
+								}).catch(reject);
+							}));
+						});
 						Promise.all(promises).then(()=>resolve(posts)).catch(reject);
 					} else resolve(posts);
 				});
@@ -45,7 +41,6 @@ class Post {
 	get(id){
 		return new Promise((resolve, reject)=>{
 			this.db.findOne({ id }, (error, value)=>{
-				//console.log('FOUND', value)
 				if(error){
 					reject(error);
 				} else {
@@ -57,12 +52,13 @@ class Post {
 	
 	add(options){
 		return new Promise((resolve, reject)=>{
-			db.posts.insert(this.jsonify(options), error=>{
+			const json = this.jsonify(options);
+			this.db.insert(json, error=>{
 				if(error) {
 					reject(error);
 				} else {
 					if(options.post) {
-						this.db.update({ id: options.post },{ $push: {'replies': post.id} }, error=>{
+						this.db.update({ id: options.post },{ $push: {'replies': options.id} }, error=>{
 							if(error){
 								reject(error);
 							} else {
@@ -70,7 +66,7 @@ class Post {
 							}
 						});
 					} else {
-						this.db.update({ name: options.channel },{ $push: {'posts': post.id} }, error=>{
+						db.channels.update({ name: options.channel },{ $push: {'posts': json.id} }, error=>{
 							if(error){
 								reject(error);
 							} else {

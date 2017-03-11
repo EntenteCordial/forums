@@ -1,3 +1,3 @@
 # forums
 
-A basic form application.
+A forum application inspired by Reddit and Discord, made with Express, nedb and Backbone.

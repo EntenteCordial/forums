@@ -336,7 +336,7 @@ var AppView = Backbone.View.extend({
 		
 		this.isPostAreaShow = false;
 		this.willPostAreaShow = false;
-		$('#postAreaContainer').css('left','-9999px');
+		$('#postAreaContainer').css('bottom', '-100px');
 		
 		this.onResize();
 		this.onLoggedOut();
@@ -406,19 +406,20 @@ var AppView = Backbone.View.extend({
 	
 	// resize window
 	onResize: function(e){
-		$('#posts').css('max-height', this.getPostsHeight());
+		$('#posts').css('height', this.getPostsHeight());
 	},
 	
 	// authentication
 	onLoggedOut: function(){
 		this.changeTopBar();
-		$('#postArea').text('').prop('disabled', true);
+		if(this.isPostAreaShow){
+			this.togglePostArea();
+		}
 	},
 	
 	onLoggedIn: function(){
 		App.router.navigate('channel', {trigger: true});
 		this.changeTopBar();
-		$('#postArea').prop('disabled', false);
 		if(this.willPostAreaShow){
 			this.willPostAreaShow = false;
 			this.togglePostArea();
@@ -427,6 +428,7 @@ var AppView = Backbone.View.extend({
 	
 	// save posts
 	onClickSave: function(){
+		console.log('save');
 		App.addPost($('#postArea').val());
 	},
 	
@@ -441,10 +443,10 @@ var AppView = Backbone.View.extend({
 	// post area
 	togglePostArea: function(){
 		if(this.isPostAreaShow){
-			$('#postAreaContainer').animate({'left':'-9999px'}, 350);
+			$('#postAreaContainer').animate({'bottom':'-100px'},350);
 			this.isPostAreaShow = false;
 		} else {
-			$('#postAreaContainer').animate({'left':0}, 350);
+			$('#postAreaContainer').animate({'bottom':'20px'}, 350);
 			this.isPostAreaShow = true;
 		}
 		$('#posts').animate({'height':this.getPostsHeight()}, 350);
@@ -511,6 +513,7 @@ var App = _.extend({
 			channel: this.currentChannel
 		}).save({
 			success: function(data){
+				console.log('SUCCESS', data);
 				if(typeof data === 'string') App.trigger('saveError',e);
 				else App.trigger('saveSuccess');
 			},
